@@ -1,0 +1,4 @@
+flet==0.8.1
+flet-core==0.8.1
+flet-runtime==0.8.1
+pandas==1.5.3
