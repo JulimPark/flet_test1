@@ -3,20 +3,20 @@ from flet import BorderSide
 from flet import RoundedRectangleBorder
 import pandas as pd
 import ast
-import sys
-import os.path
-
+from datetime import datetime
 
 
 def main(page: ft.Page):
     page.title = '수학클리닉+필요와충분 학생용 APP'
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
+    # secret_key = os.getenv("MY_APP_SECRET_KEY")
+    # print('sk',secret_key)
     # answer_list = [1,3,2,4,5,6,10,4,22,-3]
     student_dict = {'박토순':'123','박핑코':'123','박흑코':'123','':''}
     # kunters = ['a1','a2','a3','a4','a5','a6','a7','a8','a9','a10','a11']
     kunters = [k+1 for k in range(500)]
-    CWD = os.path.abspath(os.path.dirname(sys.executable))    #  추가 파일이 변형되어도 사용가능한 경로 작성
-    print(CWD)
+    # CWD = os.path.abspath(os.path.dirname(sys.executable))    #  추가 파일이 변형되어도 사용가능한 경로 작성
+    # print(CWD)
     df = pd.DataFrame(pd.read_csv(f'exam_data.csv'))
     test_num_list = df.시험고유번호.to_list()
     
@@ -43,16 +43,17 @@ def main(page: ft.Page):
         page.update()
     
     def load_exam(e):
+        global aaa,submit_button_obj,reset_button_obj
         dlg_modal4.open = False
         page.clean()
         lv = ft.ListView(expand=True, spacing=10)
-        for i in range(len(answer_list)):
-            if str(answer_list[i]) in ['1','2','3','4','5']:
+        for i in range(len(test_answer)):
+            if str(test_answer[i]) in ['1','2','3','4','5']:
                 aa = ft.Row([ft.Text(f'{i+1}번',size=25,bgcolor='green',color='white',weight=ft.FontWeight.BOLD,),
                             ft.Text('문항의 정답을 입력하세요.',size=20,color='black')])
                 lv.controls.append(aa)
                 kunters[i] = ft.RadioGroup(content=ft.Row([
-                    ft.Radio(value='1',label='1',fill_color={ft.MaterialState.DEFAULT: ft.colors.BLACK,ft.MaterialState.SELECTED: ft.colors.RED,}),
+                    ft.Radio(value='1',label='①',fill_color={ft.MaterialState.DEFAULT: ft.colors.BLACK,ft.MaterialState.SELECTED: ft.colors.RED,}),
                     ft.Radio(value='2',label='2',fill_color={ft.MaterialState.DEFAULT: ft.colors.BLACK,ft.MaterialState.SELECTED: ft.colors.RED,}),
                     ft.Radio(value='3',label='3',fill_color={ft.MaterialState.DEFAULT: ft.colors.BLACK,ft.MaterialState.SELECTED: ft.colors.RED,}),
                     ft.Radio(value='4',label='4',fill_color={ft.MaterialState.DEFAULT: ft.colors.BLACK,ft.MaterialState.SELECTED: ft.colors.RED,}),
@@ -70,16 +71,17 @@ def main(page: ft.Page):
                 # bb =ft.Divider()
                 # lv.controls.append(bb)
                 pass
+        submit_button_obj = ft.ElevatedButton(text='정답제출',icon=ft.icons.CLOUD_UPLOAD,icon_color='#A7C9FA',on_click=submit_button,scale=1.5,style=styles)
+        reset_button_obj = ft.ElevatedButton(text='초 기 화',on_click=open_dlg_modal2,icon=ft.icons.REPLAY,scale=1.5,icon_color='#A7C9FA',style=styles)
         dd = ft.Container(
         alignment=ft.alignment.center,bgcolor='#3E4857',
-        content=ft.Row(controls=[ft.ElevatedButton(text='정답제출',icon=ft.icons.CLOUD_UPLOAD,icon_color='#A7C9FA',on_click=submit_button,scale=1.5,style=styles),
-            ft.ElevatedButton(text='초 기 화',on_click=open_dlg_modal2,icon=ft.icons.REPLAY,scale=1.5,icon_color='#A7C9FA',style=styles),],
+        content=ft.Row(controls=[submit_button_obj,reset_button_obj],
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             spacing=3,),padding=ft.padding.all(30)
         )
         lv.controls.append(dd)
         page.add(lv)
-    
+        aaa = datetime.now()
     
         
     dlg_modal = ft.AlertDialog(
@@ -121,6 +123,9 @@ def main(page: ft.Page):
         on_dismiss=lambda e: print("Modal dialog dismissed!"),
     )
     
+    
+    
+    
     def open_dlg_modal(*arg):
         page.dialog = dlg_modal
         dlg_modal.open = True
@@ -143,9 +148,10 @@ def main(page: ft.Page):
         page.dialog = dlg_modal5
         dlg_modal5.open = True
         page.update()
+
         
     def choice_modal(*arg):
-        global test_name,dlg_modal4,answer_list,df2
+        global test_name,dlg_modal4,test_answer,df2,test_nums,jumsu
         try:
             test_nums = int(test_num.value)
         except:
@@ -154,6 +160,8 @@ def main(page: ft.Page):
             df2 = df[df['시험고유번호']==test_nums].loc[:,]
             test_name = df2.iat[0,1]
             answer_list = ast.literal_eval(df2.iat[0,5])
+            jumsu = ast.literal_eval(df2.iat[0,6])
+            test_answer = [str(i) for i in answer_list]
             
             def close_dlg4(e):
                 dlg_modal4.open = False
@@ -183,12 +191,74 @@ def main(page: ft.Page):
     def submit_button(e):
         stu_ans_list = []
         
-        for i in range(len(answer_list)):
-            stu_ans_list.append(kunters[i].value)
+        for i in range(len(test_answer)):
+            stu_ans_list.append(str(kunters[i].value))
+        
         if (None in stu_ans_list) | ('' in stu_ans_list):
             open_dlg_modal()
         else:
-            print(stu_ans_list)
+            bbb = datetime.now()
+            timestamp1 = aaa.timestamp()
+            timestamp2 = bbb.timestamp()
+            take_day = f"{bbb.year}/{format(bbb.month,'02')}/{format(bbb.day,'02')}"
+            # page.clean()
+            from google.cloud import firestore
+            from google.oauth2 import service_account
+            import json
+            with open('fire.json') as f:
+                key_dict = json.load(f)
+            creds = service_account.Credentials.from_service_account_info(key_dict)
+            db = firestore.Client(credentials=creds, project="test-project-6e03a")
+            correct = []
+            incorrect = []
+            sum1= 0
+            remaintime = round((timestamp2-timestamp1)/len(test_answer),2)
+            timelist = [remaintime for i in range(len(test_answer))]
+            take_day = f"{bbb.year}/{format(bbb.month,'02')}/{format(bbb.day,'02')}"
+            
+            for i in range(len(test_answer)):
+                if stu_ans_list[i] == test_answer[i]:
+                    correct.append(i+1)
+                    sum1 = sum1+jumsu[i]
+                else:
+                    incorrect.append(i+1)
+            
+            stu_name = page.session.get('stu_name')
+            doc_ref2 = db.collection("test").document(str(datetime.now()))
+            doc_ref2.set({'학생이름':stu_name,'학생HP':0,'시험고유번호':test_nums,'시험명':test_name,'점수':sum1,'학생답':str(stu_ans_list),'맞은문항':str(correct),'틀린문항':str(incorrect),'문항별응시시간(초)':str(timelist),
+                        '총응시시간(초)':sum(timelist),'응시일':take_day,'응시번호':0,'분류코드':str(df2.iat[0,11])})
+
+            def destroy_win(e):
+                page.window_destroy()
+                
+            def close_dlg6(e):
+                dlg_modal6.open = False
+                choice_exam()
+                page.update()
+        
+            dlg_modal6 = ft.AlertDialog(
+                modal=True,
+                title=ft.Text("시험 결과"),
+                content=ft.Column([ft.Text(f'< {test_name} > 시험의 점수는 {sum1} 점입니다.'),
+                                    ft.Text(f'틀린 문항의 번호는 {incorrect}입니다.'),]),
+                actions=[ft.TextButton('메인화면으로',on_click=main_page),
+                        ft.TextButton('계속 시험보기',on_click=close_dlg6),
+                        ft.TextButton('시험 종료',on_click=destroy_win)],
+                actions_alignment=ft.MainAxisAlignment.END,
+                on_dismiss=lambda e: print("Modal dialog dismissed!"),
+            )
+            
+        
+            def open_dlg_modal6(*arg):
+                page.dialog = dlg_modal6
+                dlg_modal6.open = True
+                page.update()
+            
+            open_dlg_modal6()
+            
+            
+    
+    
     
     
     def reset_button(e):
@@ -198,6 +268,7 @@ def main(page: ft.Page):
     def login_button(e):
         stu_list = student_dict.keys()
         stu_id = log_id.value
+        page.session.set('stu_name',stu_id)
         stu_pass = log_pass.value
         
         if stu_id in stu_list:
@@ -212,7 +283,7 @@ def main(page: ft.Page):
             login_page()
     
     
-    def choice_exam(e):
+    def choice_exam(*arg):
         global test_num
         page.clean()
         page.title = f"{log_id.value} 학생을 위한 시험 선택 화면"
@@ -255,23 +326,48 @@ def main(page: ft.Page):
             ),
         )
         
+    def save_client_stoage(e):
+        
+        if id_save.value == True:
+            page.client_storage.set('stu_name',log_id.value)
+            if pass_save.value == True:
+                page.client_storage.set('stu_pass',log_pass.value)
+            else:
+                page.client_storage.remove('stu_pass')
+        else:
+            page.client_storage.remove('stu_name')
+            page.client_storage.remove('stu_pass')
+        
+        
+        
+            
     def login_page():
-        global log_id,log_pass
+        global log_id,log_pass,id_save,pass_save
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         page.bgcolor = 'white'
-        log_id = ft.TextField(border_color='gray',color='blue',label='사용자 이름')
-        log_pass = ft.TextField(border_color='gray',color='blue',label='사용자 암호',password=True)
+        if page.client_storage.contains_key('stu_name'):
+            log_id = ft.TextField(border_color='gray',color='blue',label='사용자 이름',value=page.client_storage.get('stu_name'))
+        else:
+            log_id = ft.TextField(border_color='gray',color='blue',label='사용자 이름')
+        id_save = ft.Checkbox(label='이름 저장',value=False,on_change=save_client_stoage)
+        if page.client_storage.contains_key('stu_pass'):
+            log_pass = ft.TextField(border_color='gray',color='blue',label='사용자 암호',password=True,value=page.client_storage.get('stu_pass'))
+        else:
+            log_pass = ft.TextField(border_color='gray',color='blue',label='사용자 암호',password=True)
+        pass_save = ft.Checkbox(label='암호 저장',value=False,on_change=save_client_stoage)
         log_page = ft.Column(width=300,horizontal_alignment=ft.MainAxisAlignment.CENTER
             ,controls=[
             ft.Text('사용자 이름과 암호를 입력하십시오.',color='red'),
-            log_id,log_pass,
+            ft.Row([log_id,id_save]),
+            ft.Row([log_pass,pass_save]),
             ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[
                 ft.ElevatedButton('로그인',on_click=login_button),
                 ft.ElevatedButton('초기화',on_click=reset_button),
                 
             ])
         ])
+        
         page.add(log_page)
         
     
