@@ -2,6 +2,4 @@ flet==0.8.1
 flet-core==0.8.1
 flet-runtime==0.8.1
 pandas==1.5.3
-google-cloud-firestore==2.11.1
-google-auth==2.18.1
-google-auth-httplib2==0.1.0
+
