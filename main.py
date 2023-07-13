@@ -202,13 +202,7 @@ def main(page: ft.Page):
             timestamp2 = bbb.timestamp()
             take_day = f"{bbb.year}/{format(bbb.month,'02')}/{format(bbb.day,'02')}"
             # page.clean()
-            from google.cloud import firestore
-            from google.oauth2 import service_account
-            import json
-            with open('fire.json') as f:
-                key_dict = json.load(f)
-            creds = service_account.Credentials.from_service_account_info(key_dict)
-            db = firestore.Client(credentials=creds, project="test-project-6e03a")
+            
             correct = []
             incorrect = []
             sum1= 0
@@ -224,10 +218,17 @@ def main(page: ft.Page):
                     incorrect.append(i+1)
             
             stu_name = page.session.get('stu_name')
-            doc_ref2 = db.collection("test").document(str(datetime.now()))
-            doc_ref2.set({'학생이름':stu_name,'학생HP':0,'시험고유번호':test_nums,'시험명':test_name,'점수':sum1,'학생답':str(stu_ans_list),'맞은문항':str(correct),'틀린문항':str(incorrect),'문항별응시시간(초)':str(timelist),
-                        '총응시시간(초)':sum(timelist),'응시일':take_day,'응시번호':0,'분류코드':str(df2.iat[0,11])})
+                        
+            from supabase import create_client, Client
 
+            url: str = "https://uctmfeyuzyigljzvslth.supabase.co"
+            key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjdG1mZXl1enlpZ2xqenZzbHRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODkyNzEzNDEsImV4cCI6MjAwNDg0NzM0MX0.WEHXEB2U0PEAG7Pl_3pe8kPLb2MPWG_zrMCvgbMik8U"
+            supabase: Client = create_client(url, key)
+            dict_data = {'학생이름':stu_name,'학생HP':0,'시험고유번호':test_nums,'시험명':test_name,'점수':sum1,'학생답':str(stu_ans_list),'맞은문항':str(correct),'틀린문항':str(incorrect),'문항별응시시간(초)':str(timelist),
+                        '총응시시간(초)':sum(timelist),'응시일':take_day,'응시번호':0,'분류코드':str(df2.iat[0,11])}
+            supabase.table('take_exam').insert(dict_data).execute()
+            
+            
             def destroy_win(e):
                 page.window_destroy()
                 
