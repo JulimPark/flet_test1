@@ -1,24 +1,26 @@
 import flet as ft
 from flet import BorderSide
 from flet import RoundedRectangleBorder
-import pandas as pd
+# import pandas as pd
 import ast
 from datetime import datetime
+from supabase import create_client, Client
+# import sys,os
+url: str = "https://uctmfeyuzyigljzvslth.supabase.co"
+key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjdG1mZXl1enlpZ2xqenZzbHRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODkyNzEzNDEsImV4cCI6MjAwNDg0NzM0MX0.WEHXEB2U0PEAG7Pl_3pe8kPLb2MPWG_zrMCvgbMik8U"
+supabase: Client = create_client(url, key)
 
 
 def main(page: ft.Page):
     page.title = '수학클리닉+필요와충분 학생용 APP'
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
-    # secret_key = os.getenv("MY_APP_SECRET_KEY")
-    # print('sk',secret_key)
-    # answer_list = [1,3,2,4,5,6,10,4,22,-3]
     student_dict = {'박토순':'123','박핑코':'123','박흑코':'123','':''}
-    # kunters = ['a1','a2','a3','a4','a5','a6','a7','a8','a9','a10','a11']
-    kunters = [k+1 for k in range(500)]
-    # CWD = os.path.abspath(os.path.dirname(sys.executable))    #  추가 파일이 변형되어도 사용가능한 경로 작성
-    # print(CWD)
-    df = pd.DataFrame(pd.read_csv(f'exam_data.csv'))
-    test_num_list = df.시험고유번호.to_list()
+    kunters = [k+1 for k in range(500)]    
+    
+    test_num_list = []
+    response = supabase.table('exam_data').select('시험고유번호').execute()
+    for i in response.data:
+        test_num_list.append(i['시험고유번호'])
     
     def close_dlg(e):
         dlg_modal.open = False
@@ -151,16 +153,16 @@ def main(page: ft.Page):
 
         
     def choice_modal(*arg):
-        global test_name,dlg_modal4,test_answer,df2,test_nums,jumsu
+        global test_name,dlg_modal4,test_answer,response2,test_nums,jumsu
         try:
             test_nums = int(test_num.value)
         except:
             test_nums = 9999999
         if test_nums in test_num_list:
-            df2 = df[df['시험고유번호']==test_nums].loc[:,]
-            test_name = df2.iat[0,1]
-            answer_list = ast.literal_eval(df2.iat[0,5])
-            jumsu = ast.literal_eval(df2.iat[0,6])
+            response2= supabase.table('exam_data').select('*').eq('시험고유번호',test_nums).execute()
+            test_name = response2.data[0]['시험명']
+            answer_list = ast.literal_eval(response2.data[0]['정답'])
+            jumsu = ast.literal_eval(response2.data[0]['배점'])
             test_answer = [str(i) for i in answer_list]
             
             def close_dlg4(e):
@@ -218,14 +220,13 @@ def main(page: ft.Page):
                     incorrect.append(i+1)
             
             stu_name = page.session.get('stu_name')
-                        
-            from supabase import create_client, Client
-
-            url: str = "https://uctmfeyuzyigljzvslth.supabase.co"
-            key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjdG1mZXl1enlpZ2xqenZzbHRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODkyNzEzNDEsImV4cCI6MjAwNDg0NzM0MX0.WEHXEB2U0PEAG7Pl_3pe8kPLb2MPWG_zrMCvgbMik8U"
-            supabase: Client = create_client(url, key)
+            response3 = supabase.table('take_exam').select('응시번호').execute()
+            take_num_list = []
+            for i in response3.data:
+                take_num_list.append(i['응시번호'])
+            
             dict_data = {'학생이름':stu_name,'학생HP':0,'시험고유번호':test_nums,'시험명':test_name,'점수':sum1,'학생답':str(stu_ans_list),'맞은문항':str(correct),'틀린문항':str(incorrect),'문항별응시시간(초)':str(timelist),
-                        '총응시시간(초)':sum(timelist),'응시일':take_day,'응시번호':0,'분류코드':str(df2.iat[0,11])}
+                        '총응시시간(초)':sum(timelist),'응시일':take_day,'응시번호':max(take_num_list)+1,'분류코드':str(response2.data[0]['분류코드'])}
             supabase.table('take_exam').insert(dict_data).execute()
             
             
