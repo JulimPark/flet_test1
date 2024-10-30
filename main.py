@@ -5,11 +5,6 @@ from flet import RoundedRectangleBorder
 import ast
 from datetime import datetime
 from supabase import create_client, Client
-# import sys,os
-url: str = "https://uctmfeyuzyigljzvslth.supabase.co"
-key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjdG1mZXl1enlpZ2xqenZzbHRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODkyNzEzNDEsImV4cCI6MjAwNDg0NzM0MX0.WEHXEB2U0PEAG7Pl_3pe8kPLb2MPWG_zrMCvgbMik8U"
-supabase: Client = create_client(url, key)
-
 
 def main(page: ft.Page):
     page.title = '수학클리닉+필요와충분 학생용 APP'
